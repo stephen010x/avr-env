@@ -18,8 +18,7 @@ Implementing this required interfacing with the arduino's ADC hardware through t
 
 Pictures of this are provided below, but unfortunately there is no video demonstrating the potentiometer program in action.
 
-<img width="256" src="media/image1.webp" alt="image1">
-<img width="256" src="media/image2.webp" alt="image2">
+<img height="180" src="media/image1.webp" alt="image1"> <img height="180" src="media/image2.webp" alt="image2">
 
 
 ## Environment Features
