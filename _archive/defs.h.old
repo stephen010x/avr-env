@@ -1,0 +1,45 @@
+;// first segment memory mappings
+.equ M_PORTD,	0x2B
+.equ M_DDRD,	0x2A
+.equ M_PIND,	0x29
+
+.equ M_ADCSRA,	0x7A
+.equ M_ADMUX,	0x7C
+.equ M_ADCL,	0x78
+.equ M_ADCH,	0x79
+
+
+;// io memory mappings
+.equ IO_PORTD,	0x0B
+.equ IO_DDRD,	0x0A
+.equ IO_PIND,	0x09
+
+
+;// relative io mappings
+.equ RIO_BASE,	0x0020
+.equ RIO_BASE_H,0x00
+.equ RIO_BASE_L,0x20
+
+.equ RIO_PORTD,	0x0B
+.equ RIO_DDRD,	0x0A
+.equ RIO_PIND,	0x09
+
+
+;// relative extra io mappings
+.equ EIO_BASE,	0x0060
+.equ EIO_BASE_H,0x00
+.equ EIO_BASE_L,0x60
+
+.equ EIO_ADCSRA,0x1A
+.equ EIO_ADMUX,	0x1C
+.equ EIO_ADCL,	0x18
+.equ EIO_ADCH,	0x19
+
+
+.equ RAMEND,	0x08FF
+.equ RAMEND_H,	0x08
+.equ RAMEND_L,	0xFF
+
+
+;// bit masks
+.equ MASK_ADCSRA_ADSC,	0b01000000

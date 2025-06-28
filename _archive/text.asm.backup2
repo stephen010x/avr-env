@@ -1,0 +1,213 @@
+
+; remember, you can probably run C's preprocessor on this.
+
+; assume all registers default to 0x00 upon reset
+; for the ATmega328P, SRAM seems to end at 0x08FF?
+
+; consider adding a div macro and/or function. Maye make
+; it a handler. Als add a shr shl macro
+
+;.include "./defs.h"
+
+#include "./defs.h"
+
+#define CPU_FREQ 	16000000
+#define CLOCK_PRESC 1024
+#define CLOCK_TOP	16
+;#define CLOCK_FREQ	(CPU_FREQ/CLOCK_PRESCALER) ;(interrupt / second)
+; CLOCK_RES = 1e6/CLOCK_FREQ (microseconds) = 64us (16MhZ) = 128us (8MhZ)
+; CLOCK_STEP = 1/256 milliseconds per interupt
+;			 = 256e3/CLOCK_FREQ = 256*256*256/16e6 = 1+12/256, error of about 1ms/1000
+;#define CLOCK_STEP_L /0x0C
+;#define CLOCK_SETP_H 0x01
+; ~1ms clock step resolution
+;#define CLOCK_STEP (256000*CLOCK_TOP*CLOCK_PRESC/CPU_FREQ)
+;#define CLOCK_STEP_H (CLOCK_STEP/256)
+;#define CLOCK_STEP_L (CLOCK_STEP-CLOCK_STEP_H*256)
+
+; define global variable page
+#define GLOBALS_L 0x00
+#define GLOBALS_H 0x01
+; define 32 bit clock register location in global page
+; the first one is the fraction value (1/256)
+#define CLOCK_REG_LL 0x00
+#define CLOCK_REG_LH 0x01
+#define CLOCK_REG_HL 0x02
+#define CLOCK_REG_HH 0x03
+
+
+
+
+.text
+#include "./int.asm"
+
+
+
+
+TIM0_COMPA:
+			rcall	CLOCK_INC
+			reti
+
+
+
+
+RESET:	; disable interrupts (just in case)
+		cli
+
+		; set stack pointer to RAMEND
+		ldi		r16, RAMEND_H
+		out		sph, r16
+		ldi		r16, RAMEND_L
+		out		spl, r16
+
+		; set up timer registers for global clock
+		; I should look into if gas allows assemble time "|" operations
+		; I will test that here:
+		ldi		r16, 0x00 | 0b0010	; CTC mode
+		ldi		r17, 0x00 | 0b0101	; 1024 prescaler
+		ldi		r18, 0x10			; set TOP = 16
+		ldi		r19, 0b0010			; enable A match interrupt
+		out 	IO_TCCR0A, r16
+		out 	IO_TCCR0B, r17
+		out 	IO_OCR0A, r18
+
+		; enable interrupts.
+		sei
+
+		rjmp	SETUP
+
+
+
+
+CLOCK_INC:	; increment global clock
+		push	yl
+		push	yh
+		push	r16
+
+		; set up globals pointer
+		ldi		yl, GLOBALS_L
+		ldi		yh, GLOBALS_H
+
+		ldi		r17, CLOCK_STEP_L
+		ldi		r18, CLOCK_STEP_H
+
+		; add clock step to first two clock registers
+		ldd		r16, y+ CLOCK_REG_LL
+		subi 	r16, -CLOCK_SETP_L		; this also works as addi
+		std		y+ CLOCK_REG_LL, r16
+		ldd		r16, y+ CLOCK_REG_LH
+		brcc	0f
+		inc 	r16
+0:		subi	r16, -CLOCK_SETP_L
+		std		y+ CLOCK_REG_LH, r16
+		brcc	1f
+
+		; propogate carry to next two clock registers
+		ldd		r16, y+ CLOCK_REG_HL
+		inc 	r16
+		std		y+ CLOCK_REG_HL, r16
+		brcc	1f
+		
+		ldd		r16, y+ CLOCK_REG_HH
+		inc 	r16
+		std		y+ CLOCK_REG_HH, r16
+
+1:		pop		r16
+		pop		yh
+		pop		yl
+		ret
+
+
+
+
+SETUP:	; setup DC pin registers
+		ldi		r16, 0x00
+		ldi		r17, 0x1F
+		out		IO_PORTD, r16
+		out		IO_DDRD, r17
+
+		; setup ADC registers
+		ldi		r16, 0b10000111
+		ldi		r17, 0b01000010
+		sts		M_ADCSRA, r16
+		sts		M_ADMUX, r17
+
+
+		; set up Extra IO base pointer for concise ADC register access
+		ldi		zl, EIO_BASE_L
+		ldi		zh, EIO_BASE_H
+		
+LOOP:	; set ADC start conversion bit
+		ldd		r16, z+ EIO_ADCSRA
+		ori		r16, MASK_ADCSRA_ADSC
+		std		z+ EIO_ADCSRA, r16
+
+0:		; wait until ADC conversion is complete
+		ldd 	r16, z+ EIO_ADCSRA
+		andi	r16, MASK_ADCSRA_ADSC
+		brne	0b	
+
+		; load and adjust ADC value, output r5:r4
+		ldd		r20, z+ EIO_ADCL
+		ldd		r21, z+ EIO_ADCH
+		andi	r21, 0x03
+
+		; map value to range 0-5
+		; multiply value by 6, output r19:r18
+		; I think the idea is that it will never reach 6
+		ldi		r16, 6
+		mul		r21, r16
+		;;ldi	r18, 0 	; optimized out
+		mov		r19, r0
+		mul		r20, r16
+		;;add	r18, r0	; optimized out
+		add		r19, r1
+		; divide value by 1024, output r19
+		lsr		r19		; kind of weird, but oddly charming
+		lsr		r19
+		; subtract from 6, output r16
+		sub 	r16, r19
+		; final shift mask, output r17
+		ldi		r17, 0x3F
+0:		lsr		r17
+		dec		r16
+		brne	0b
+
+		; write to pins
+		out 	IO_PORTD, r17
+
+		; delay for 50ms
+		ldi		r25, 0x32
+		ldi		r24, 0x00
+		call	DELAY
+		
+		rjmp	LOOP
+
+
+
+
+; input r25:r24
+; so many gosh darn registers I don't even need a stack frame.
+DELAY:	; TODO: write delay function here
+		push	r16
+		push	r17
+
+		ldi		r16, 0
+		ldi		r17, 1
+
+		; set sleep mode to idle
+		out 	IO_SMCR, r16
+
+		; idle until interrupt
+		; (each sleep should be around 1ms)
+0:		out		IO_SMCR, r17
+		sleep
+		out		IO_SMCR, r16
+		sbiw	r24, 1
+		brne	0b
+
+		pop 	r17
+		pop		r16
+		ret
+
+; have a microsecond delay just be a busyloop
