@@ -4,7 +4,7 @@
 
 
 ## What is it?
-This project was originally an assignment for an embedded systems class. The assignment was originally suppose to be written in C/C++. But I felt that an extra challenge was needed, and decided to do this assignment from scratch using only AVR Assembly, without the help from any of the Arduino libraries or backend. In order to achieve this project, The AVR interrupt table had to be written from scratch, neccissary interrupts had to be written from scratch, and it all had to be done in AVR Assembly code. And then finally flashed using [avrdude](https://github.com/avrdudes/avrdude).
+This project was originally an assignment for an embedded systems class. The assignment was originally suppose to be written in C/C++. But I felt that an extra challenge was needed, and decided to do this assignment from scratch using only AVR Assembly, without the help from any of the Arduino Libraries or the Arduino ARV Core. In order to achieve this project, The AVR interrupt table had to be written from scratch, neccissary interrupts had to be written from scratch, and it all had to be done in AVR Assembly code. And then finally flashed using [avrdude](https://github.com/avrdudes/avrdude).
 
 This project was also my excuse to learn AVR assembly in the first place. The process of learning AVR assembly, learning the runtime and reset and interrupt behavior of the ATmega processor, and writing the runtime environment alongside the main program code for this assignment took about 5 days.
 
@@ -14,7 +14,7 @@ This runtime envrionment is reusable, and can be built upon by simply replacing 
 ### The current program
 The current program that is running on-top of this runtime environment is the actual assignment. The task is to read analog input from a potentiometer, and then map and output that range to light up 4 individual led's to indicate the position of the knob.
 
-Implementing this required interfacing with the arduino's ADC hardware through the memory mapped IO registers.
+Implementing this required interfacing with the Arduino's ADC hardware through the memory mapped IO registers.
 
 Pictures of this are provided below, but unfortunately there is no video demonstrating the potentiometer program in action.
 
@@ -22,7 +22,7 @@ Pictures of this are provided below, but unfortunately there is no video demonst
 
 
 ## Environment Features
-Without the Arduino Library and environment to do all the hard stuff, such as setting up a clock, handling interrupts, and library implementations such as the 'delay()' function, this all has to be implemented manually from scratch. The features implemented so far include:
+Without the Arduino AVR Core to do all the hard stuff, such as setting up a clock, handling interrupts, and library implementations such as the 'delay()' function, this all has to be implemented manually from scratch. The features implemented so far include:
 
 - Interrupt vector table.
 - Macros to address a variety of neccissary memory mapped IO.
@@ -31,7 +31,7 @@ Without the Arduino Library and environment to do all the hard stuff, such as se
 
 
 ### The timer interrupt and the clock
-Many don't realize the neccissary scaffolding that the Arduino Library sets up and runs in the background in order to support the user environment for those writing programs in their IDE. One particular feature, the system clock, is vital to the operation of the `delay()` function and the `micros()` function. In order for these to work properly, Arduino sets up a timer interrupt before calling the user implemented `setup()` function. This timer interrupt is triggered approximately once per millisecond, which then increments the system clock. Without the Arduino Library, my from-scratch AVR environment has to rely on it's own custom implementation of the system clock via the timer interrupts.
+Many don't realize the neccissary scaffolding that the Arduino Core sets up and runs in the background in order to support the user environment for those writing programs in their IDE. One particular feature, the system clock, is vital to the operation of the `delay()` function and the `micros()` function. In order for these to work properly, Arduino sets up a timer interrupt before calling the user implemented `setup()` function. This timer interrupt is triggered approximately once per millisecond, which then increments the system clock. Without the Arduino AVR Core, my from-scratch AVR environment has to rely on it's own custom implementation of the system clock via the timer interrupts.
 
 
 ### C Preprocessor
@@ -63,7 +63,7 @@ Note that the tools, scripts, and devices for flashing this project are intended
 
 ### Flash
 Run `make upload` to flash the code to the Arduino.
-Make sure to change the `port:=ttyUSB0` variable in the [makefile](/makefile) to the correct port that the arduino is identified to be on.
+Make sure to change the `port:=ttyUSB0` variable in the [makefile](/makefile) to the correct port that the Arduino is identified to be on.
 
 Run `make monitor` to run the [arduino-cli](https://github.com/arduino/arduino-cli) serial monitor.
 
