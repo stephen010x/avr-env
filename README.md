@@ -44,7 +44,7 @@ Note that the tools and scripts for building this project are intended to run on
 This runtime environment can be compiled for the ATmega324P/V, ATmega324P/V, ATmega324P/V, and the ATmega328P microprocessors.
 
 ### Tools needed
-[GCC](https://gcc.gnu.org/) (used for the preprocessor) \
+[gcc](https://gcc.gnu.org/) (used for the preprocessor) \
 [avr-as](https://linux.die.net/man/1/avr-as) \
 [avr-ld](https://linux.die.net/man/1/avr-ld) \
 [avr-objcopy](https://linux.die.net/man/1/avr-objcopy)
